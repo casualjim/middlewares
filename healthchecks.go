@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 // HealthChecks is a middleware that serves healthcheck information

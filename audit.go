@@ -2,9 +2,11 @@ package middlewares
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/inconshreveable/log15"
 	"github.com/rcrowley/go-metrics"
@@ -32,16 +34,12 @@ type Logger struct {
 
 // NewLogger returns a new Logger instance
 func NewLogger(info AppInfo, next http.Handler) *Logger {
-	return NewLoggerAt("", info, next)
-}
-
-// NewLoggerAt returns a new Logger instance rooted at the specified base path
-func NewLoggerAt(basePath string, info AppInfo, next http.Handler) *Logger {
+	basePath := info.BasePath
 	if basePath == "" {
 		basePath = "/"
 	}
 	return &Logger{
-		Logger:   log15.New("type", "requests"),
+		Logger:   log15.New("type", "requests", "app", info.Name),
 		basePath: basePath,
 		next:     next,
 		info:     info,
@@ -100,8 +98,9 @@ type TimerMetric struct {
 
 // AppInfo the information describing the component for this API
 type AppInfo struct {
-	Name    string
-	Version string
+	Name     string
+	Version  string
+	BasePath string
 }
 
 func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -184,10 +183,13 @@ func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "application/json;charset=utf-8")
 		enc.Encode(l.info)
 	} else {
+		l.Logger.Debug(fmt.Sprintf("Begin %s %s", r.Method, r.URL.Path))
 		timer := metrics.GetOrRegisterTimer(r.URL.Path, metrics.DefaultRegistry)
+		start := time.Now()
 		timer.Time(func() {
 			l.next.ServeHTTP(rw, r)
 		})
+		l.Logger.Info(fmt.Sprintf("%s %s", r.Method, r.URL.Path), "took", time.Now().Sub(start))
 	}
 
 }

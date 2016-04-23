@@ -6,7 +6,7 @@ import "net/http"
 func DefaultStack(appInfo AppInfo, orig http.Handler) http.Handler {
 	recovery := NewRecovery(appInfo.Name, orig)
 	gzip := Gzip(DefaultCompression, recovery)
-	logger := NewLoggerAt(contextPath, appInfo, gzip)
+	logger := NewLogger(appInfo, gzip)
 	profiler := NewProfiler(logger)
-	return NewHealthChecks(contextPath, profiler)
+	return NewHealthChecks(appInfo.BasePath, profiler)
 }
