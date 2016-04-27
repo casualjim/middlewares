@@ -98,9 +98,10 @@ type TimerMetric struct {
 
 // AppInfo the information describing the component for this API
 type AppInfo struct {
-	Name     string
-	Version  string
-	BasePath string
+	Name     string `json:"name"`
+	Version  string `json:"version"`
+	BasePath string `json:"basePath"`
+	Pid      int    `json:"pid"`
 }
 
 func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
