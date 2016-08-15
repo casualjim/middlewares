@@ -2,18 +2,22 @@ package middlewares
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/inconshreveable/log15"
 	"github.com/rcrowley/go-metrics"
-
 	// ensure pprof is loaded and its http hooks installed
 	_ "net/http/pprof"
 )
+
+// Logger interface to allow different logging libaries to be used with this middleware
+type Logger interface {
+	Debugf(string, ...interface{})
+	Infof(string, ...interface{})
+	Errorf(string, ...interface{})
+}
 
 func init() {
 	metrics.RegisterDebugGCStats(metrics.DefaultRegistry)
@@ -23,23 +27,23 @@ func init() {
 	go metrics.CaptureRuntimeMemStats(metrics.DefaultRegistry, 5e9)
 }
 
-// Logger is a middleware handler that logs the request as it goes in and the response as it goes out.
-type Logger struct {
-	// Logger is the log.Logger instance used to log messages with the Logger middleware
-	Logger   log15.Logger
+// Audit is a middleware handler that logs the request as it goes in and the response as it goes out.
+type Audit struct {
+	// logger is the Logger instance used to log messages with the Audit middleware
+	Logger   Logger
 	basePath string
 	next     http.Handler
 	info     AppInfo
 }
 
-// NewLogger returns a new Logger instance
-func NewLogger(info AppInfo, next http.Handler) *Logger {
+// NewAudit returns a new Audit instance
+func NewAudit(info AppInfo, logger Logger, next http.Handler) *Audit {
 	basePath := info.BasePath
 	if basePath == "" {
 		basePath = "/"
 	}
-	return &Logger{
-		Logger:   log15.New("type", "requests", "app", info.Name),
+	return &Audit{
+		Logger:   logger,
 		basePath: basePath,
 		next:     next,
 		info:     info,
@@ -104,7 +108,7 @@ type AppInfo struct {
 	Pid      int    `json:"pid"`
 }
 
-func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (l *Audit) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, filepath.Join(l.basePath, "audit", "metrics")) {
 		data := make(map[string]interface{})
 		metrics.DefaultRegistry.Each(func(name string, i interface{}) {
@@ -184,13 +188,13 @@ func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "application/json;charset=utf-8")
 		enc.Encode(l.info)
 	} else {
-		l.Logger.Debug(fmt.Sprintf("Begin %s %s", r.Method, r.URL.Path))
+		l.Logger.Debugf("Begin %s %s", r.Method, r.URL.Path)
 		timer := metrics.GetOrRegisterTimer(r.URL.Path, metrics.DefaultRegistry)
 		start := time.Now()
 		timer.Time(func() {
 			l.next.ServeHTTP(rw, r)
 		})
-		l.Logger.Info(fmt.Sprintf("%s %s", r.Method, r.URL.Path), "took", time.Now().Sub(start))
+		l.Logger.Infof("%s %s (took: %s)", r.Method, r.URL.Path, time.Now().Sub(start).String())
 	}
 
 }
