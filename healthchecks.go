@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/justinas/alice"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -12,6 +13,13 @@ import (
 type HealthChecks struct {
 	basePath string
 	next     http.Handler
+}
+
+// NewHealthChecksMW creates a new health check middleware at the specified path
+func NewHealthChecksMW(basePath string) alice.Constructor {
+	return func(next http.Handler) http.Handler {
+		return NewHealthChecks(basePath, next)
+	}
 }
 
 // NewHealthChecks creates a new health check middleware at the specified path

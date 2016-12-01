@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/justinas/alice"
 )
 
 // Recovery is a middleware that recovers from any panics and writes a 500 if there was one.
@@ -11,6 +13,13 @@ type Recovery struct {
 	Logger     Logger
 	PrintStack bool
 	next       http.Handler
+}
+
+// NewRecoveryMW returns a new instance of Recovery middleware which traps panics
+func NewRecoveryMW(appName string, lgr Logger) alice.Constructor {
+	return func(next http.Handler) http.Handler {
+		return NewRecovery(appName, lgr, next)
+	}
 }
 
 // NewRecovery returns a new instance of Recovery

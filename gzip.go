@@ -4,6 +4,8 @@ import (
 	"compress/gzip"
 	"net/http"
 	"strings"
+
+	"github.com/justinas/alice"
 )
 
 // These compression constants are copied from the compress/gzip package.
@@ -45,6 +47,14 @@ func (grw gzipResponseWriter) Write(b []byte) (int, error) {
 type handler struct {
 	compressionLevel int
 	next             http.Handler
+}
+
+// GzipMW returns a middleware which will handle the Gzip compression in ServeHTTP.
+// Valid values for level are identical to those in the compress/gzip package.
+func GzipMW(level int) alice.Constructor {
+	return func(next http.Handler) http.Handler {
+		return Gzip(level, next)
+	}
 }
 
 // Gzip returns a handler which will handle the Gzip compression in ServeHTTP.

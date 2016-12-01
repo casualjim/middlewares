@@ -10,6 +10,8 @@ import (
 	"github.com/rcrowley/go-metrics"
 	// ensure pprof is loaded and its http hooks installed
 	_ "net/http/pprof"
+
+	"github.com/justinas/alice"
 )
 
 // Logger interface to allow different logging libaries to be used with this middleware
@@ -34,6 +36,13 @@ type Audit struct {
 	basePath string
 	next     http.Handler
 	info     AppInfo
+}
+
+// NewAuditMW returns a new Audit middleware
+func NewAuditMW(info AppInfo, logger Logger) alice.Constructor {
+	return func(hand http.Handler) http.Handler {
+		return NewAudit(info, logger, hand)
+	}
 }
 
 // NewAudit returns a new Audit instance
