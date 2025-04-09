@@ -5,9 +5,7 @@ go 1.24.2
 require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/goccy/go-json v0.10.5
-	github.com/justinas/alice v1.2.0
 	github.com/klauspost/compress v1.18.0
-	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.10.0
 )
 
